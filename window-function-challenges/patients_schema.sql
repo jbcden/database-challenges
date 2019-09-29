@@ -5,6 +5,6 @@ name text,
 day integer,
 event text);
 
-\copy '/Users/jacobc/projects/database-challenges/window-function-challenges/patients.tsv' delimiter '\t';
+\copy patients '/Users/jacobc/projects/database-challenges/window-function-challenges/patients.tsv' with csv delimiter E'\t';
 
 commit;
