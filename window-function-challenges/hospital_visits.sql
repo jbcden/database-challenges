@@ -1,23 +1,16 @@
 with annotated_discharge as (
   select
-    patients.name,
-    patients.day,
-    patients.event,
-    discharge.day as discharge_day
+    name,
+    day,
+    event,
+    (select day
+     from patients as events
+     where name = patients.name
+       and event = 'discharge'
+       and patients.day <= day
+     order by name, day limit 1) as discharge_day
   from patients
-  left join lateral (
-    select events.name, events.day, events.event
-    from patients as events
-    where events.event = 'discharge'
-    and events.name = patients.name
-    and events.day >= patients.day
-    order by patients.name, patients.day
-    limit 1
-  )
-  as discharge
-  on true
-
-  order by patients.name, patients.day
+  order by name, day
 ), annotated_patients as (
   select
     name,
@@ -30,8 +23,15 @@ with annotated_discharge as (
 )
 select
   name,
-  discharge_day,
-  count(event) filter (where event = 'family visit') as family_visits,
+  min(admit_day),
+  COALESCE(
+    (select count(*)
+     from annotated_patients ap
+     where annotated_patients.name = name
+       and annotated_patients.discharge_day = discharge_day
+       and event = 'family visit' group by name, discharge_day),
+    0
+  ) as family_visits,
   discharge_day - min(admit_day) as stay_length
 from annotated_patients
 where name = 'ahmad'
